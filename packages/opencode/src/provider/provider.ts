@@ -1396,10 +1396,9 @@ const layer = Layer.effect(
     const state = yield* InstanceState.make<State>(() =>
       Effect.gen(function* () {
         const bridge = yield* EffectBridge.make()
-        const cfg = yield* config.get()
         const modelsDev = yield* modelsDevSvc.get()
         const catalog = mapValues(modelsDev, fromModelsDevProvider)
-        const database = mapValues(catalog, toPublicInfo)
+        const database: Record<string, Info> = {}
 
         const providers: Record<ProviderV2.ID, Info> = {} as Record<ProviderV2.ID, Info>
         const languages = new Map<string, LanguageModelV3>()
@@ -1435,13 +1434,19 @@ const layer = Layer.effect(
 
         // load plugins first so config() hook runs before reading cfg.provider
         const plugins = yield* plugin.list()
+        const cfg = yield* config.get()
 
         // now read config providers - includes any modifications from plugin config() hook
         const configProviders = Object.entries(cfg.provider ?? {})
+        for (const [providerID] of configProviders) {
+          const match = catalog[providerID]
+          if (match) database[providerID] = toPublicInfo(match)
+        }
         const disabled = new Set(cfg.disabled_providers ?? [])
         const enabled = cfg.enabled_providers ? new Set(cfg.enabled_providers) : null
 
         function isProviderAllowed(providerID: ProviderV2.ID): boolean {
+          if (!cfg.provider?.[providerID]) return false
           if (enabled && !enabled.has(providerID)) return false
           if (disabled.has(providerID)) return false
           return true
@@ -1579,7 +1584,7 @@ const layer = Layer.effect(
         const envs = yield* env.all()
         for (const [id, provider] of Object.entries(database)) {
           const providerID = ProviderV2.ID.make(id)
-          if (disabled.has(providerID)) continue
+          if (!isProviderAllowed(providerID)) continue
           const apiKey = provider.env.map((item) => envs[item]).find(Boolean)
           if (!apiKey) continue
           mergeProvider(providerID, {
@@ -1592,7 +1597,7 @@ const layer = Layer.effect(
         const auths = yield* auth.all().pipe(Effect.orDie)
         for (const [id, provider] of Object.entries(auths)) {
           const providerID = ProviderV2.ID.make(id)
-          if (disabled.has(providerID)) continue
+          if (!isProviderAllowed(providerID)) continue
           if (provider.type === "api") {
             mergeProvider(providerID, {
               source: "api",
@@ -1605,7 +1610,7 @@ const layer = Layer.effect(
         for (const plugin of plugins) {
           if (!plugin.auth) continue
           const providerID = ProviderV2.ID.make(plugin.auth.provider)
-          if (disabled.has(providerID)) continue
+          if (!isProviderAllowed(providerID)) continue
 
           const stored = yield* auth.get(providerID).pipe(Effect.orDie)
           if (!stored) continue
@@ -1624,7 +1629,7 @@ const layer = Layer.effect(
 
         for (const [id, fn] of Object.entries(custom(dep))) {
           const providerID = ProviderV2.ID.make(id)
-          if (disabled.has(providerID)) continue
+          if (!isProviderAllowed(providerID)) continue
           const data = database[providerID]
           if (!data) {
             continue
@@ -1717,7 +1722,10 @@ const layer = Layer.effect(
         return {
           models: languages,
           providers,
-          catalog,
+          catalog: Object.fromEntries(configProviders.flatMap(([id]) => {
+            const item = catalog[id]
+            return item ? [[id, item]] : []
+          })) as Record<ProviderV2.ID, Info>,
           sdk,
           modelLoaders,
           varsLoaders,

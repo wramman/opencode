@@ -353,18 +353,19 @@ export const ProvidersLoginCommand = effectCmd({
 
     const cfgSvc = yield* Config.Service
     const pluginSvc = yield* Plugin.Service
-    const modelsDev = yield* ModelsDev.Service
-    yield* Effect.ignore(modelsDev.refresh(true))
-
     const config = yield* cfgSvc.get()
 
+    const jsonIDs = new Set(Object.keys(config.provider ?? {}))
     const disabled = new Set(config.disabled_providers ?? [])
-    const enabled = config.enabled_providers ? new Set(config.enabled_providers) : undefined
+    const enabled = config.enabled_providers
+      ? new Set(config.enabled_providers.filter((id) => jsonIDs.has(id)))
+      : jsonIDs
 
-    const allProviders = yield* modelsDev.get()
-    const providers: Record<string, (typeof allProviders)[string]> = {}
-    for (const [key, value] of Object.entries(allProviders)) {
-      if ((enabled ? enabled.has(key) : true) && !disabled.has(key)) providers[key] = value
+    const providers: Record<string, { id: string; name: string }> = {}
+    for (const [id, value] of Object.entries(config.provider ?? {})) {
+      if ((enabled ? enabled.has(id) : true) && !disabled.has(id)) {
+        providers[id] = { id, name: value.name ?? id }
+      }
     }
     const hooks = yield* pluginSvc.list()
 
