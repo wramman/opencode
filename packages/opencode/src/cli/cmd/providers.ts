@@ -423,7 +423,7 @@ export const ProvidersLoginCommand = effectCmd({
         yield* Prompt.autocomplete({
           message: "Select provider",
           maxItems: 8,
-          options: [...options, { value: "other", label: "Other" }],
+          options,
         }),
       )
     }
@@ -432,25 +432,6 @@ export const ProvidersLoginCommand = effectCmd({
     if (plugin && plugin.auth) {
       const handled = yield* handlePluginAuth({ auth: plugin.auth! }, provider, args.method)
       if (handled) return
-    }
-
-    if (provider === "other") {
-      provider = (yield* promptValue(
-        yield* Prompt.text({
-          message: "Enter provider id",
-          validate: (x) => (x && x.match(/^[0-9a-z-]+$/) ? undefined : "a-z, 0-9 and hyphens only"),
-        }),
-      )).replace(/^@ai-sdk\//, "")
-
-      const customPlugin = hooks.findLast((x) => x.auth?.provider === provider)
-      if (customPlugin && customPlugin.auth) {
-        const handled = yield* handlePluginAuth({ auth: customPlugin.auth! }, provider, args.method)
-        if (handled) return
-      }
-
-      yield* Prompt.log.warn(
-        `This only stores a credential for ${provider} - you will need configure it in opencode.json, check the docs for examples.`,
-      )
     }
 
     if (provider === "amazon-bedrock") {
