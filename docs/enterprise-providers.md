@@ -33,10 +33,11 @@ No declares `openai` / `anthropic` en el JSON si no querés esos modelos: una ke
 
 ## Correr este fork
 
-Desde la raíz del repo, no el `opencode` global:
+Desde la raíz del repo, no el `opencode` global. Para no mezclar con el OpenCode instalado:
 
-```bash
-bun install
+```bat
+set OPENCODE_CONFIG_DIR=%USERPROFILE%\.local\share\opencode-enterprise\config
+set XDG_DATA_HOME=%USERPROFILE%\.local\share\opencode-enterprise\xdg-data
 bun dev .
 ```
 

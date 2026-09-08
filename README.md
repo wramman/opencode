@@ -43,6 +43,72 @@
 
 ---
 
+## Fork interno
+
+Este fork **no usa el catálogo público**. Solo existen los proveedores declarados en JSON. No uses el `opencode` instalado en el sistema: ese es otro binario y otra config.
+
+Más detalle: [docs/enterprise-providers.md](docs/enterprise-providers.md)
+
+### Cómo correrlo
+
+Requisito: [Bun](https://bun.sh) 1.3+.
+
+```bat
+bun install
+set OPENCODE_CONFIG_DIR=%USERPROFILE%\.local\share\opencode-enterprise\config
+set XDG_DATA_HOME=%USERPROFILE%\.local\share\opencode-enterprise\xdg-data
+bun dev .
+```
+
+`OPENCODE_CONFIG_DIR` y `XDG_DATA_HOME` aíslan este fork de tu OpenCode global (`~\.config\opencode`).
+
+Para un proyecto concreto: `bun dev C:\ruta\al\proyecto`.
+
+### Compilar a exe (Windows)
+
+Sí. Desde la raíz del repo:
+
+```bat
+bun run packages/opencode/script/build.ts --single
+```
+
+El binario queda en:
+
+`packages/opencode/dist/opencode-windows-x64/bin/opencode.exe`
+
+(en ARM64: `opencode-windows-arm64`). Seguí usando las mismas variables de entorno al ejecutarlo, o va a leer la config global.
+
+### Dónde agregar los modelos privados
+
+En el JSON de config aislada:
+
+`%USERPROFILE%\.local\share\opencode-enterprise\config\opencode.json`
+
+O en un `opencode.json` del proyecto. **No** uses `opencode auth` cloud.
+
+```json
+{
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama interno",
+      "options": {
+        "baseURL": "https://ollama.empresa.local/v1"
+      },
+      "models": {
+        "llama": { "name": "Llama" }
+      }
+    }
+  }
+}
+```
+
+Cada key de `provider` es un proveedor permitido. Cada entrada de `models` es un modelo que aparece en la TUI. Cambiar el host = editar `options.baseURL`.
+
+No pongas `openai` ni `anthropic` en ese JSON si no querés esos modelos.
+
+---
+
 ### Installation
 
 ```bash
