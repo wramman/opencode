@@ -353,9 +353,11 @@ export const ProvidersLoginCommand = effectCmd({
 
     const cfgSvc = yield* Config.Service
     const pluginSvc = yield* Plugin.Service
+    const modelsDev = yield* ModelsDev.Service
     const config = yield* cfgSvc.get()
+    const catalog = yield* modelsDev.get()
 
-    const jsonIDs = new Set(Object.keys(config.provider ?? {}))
+    const jsonIDs = new Set(Object.keys(config.provider ?? {}).filter((id) => !catalog[id]))
     const disabled = new Set(config.disabled_providers ?? [])
     const enabled = config.enabled_providers
       ? new Set(config.enabled_providers.filter((id) => jsonIDs.has(id)))
@@ -363,6 +365,7 @@ export const ProvidersLoginCommand = effectCmd({
 
     const providers: Record<string, { id: string; name: string }> = {}
     for (const [id, value] of Object.entries(config.provider ?? {})) {
+      if (!jsonIDs.has(id)) continue
       if ((enabled ? enabled.has(id) : true) && !disabled.has(id)) {
         providers[id] = { id, name: value.name ?? id }
       }

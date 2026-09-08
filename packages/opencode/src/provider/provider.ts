@@ -1397,7 +1397,6 @@ const layer = Layer.effect(
       Effect.gen(function* () {
         const bridge = yield* EffectBridge.make()
         const modelsDev = yield* modelsDevSvc.get()
-        const catalog = mapValues(modelsDev, fromModelsDevProvider)
         const database: Record<string, Info> = {}
 
         const providers: Record<ProviderV2.ID, Info> = {} as Record<ProviderV2.ID, Info>
@@ -1438,14 +1437,11 @@ const layer = Layer.effect(
 
         // now read config providers - includes any modifications from plugin config() hook
         const configProviders = Object.entries(cfg.provider ?? {})
-        for (const [providerID] of configProviders) {
-          const match = catalog[providerID]
-          if (match) database[providerID] = toPublicInfo(match)
-        }
         const disabled = new Set(cfg.disabled_providers ?? [])
         const enabled = cfg.enabled_providers ? new Set(cfg.enabled_providers) : null
 
         function isProviderAllowed(providerID: ProviderV2.ID): boolean {
+          if (modelsDev[providerID]) return false
           if (!cfg.provider?.[providerID]) return false
           if (enabled && !enabled.has(providerID)) return false
           if (disabled.has(providerID)) return false
@@ -1722,10 +1718,7 @@ const layer = Layer.effect(
         return {
           models: languages,
           providers,
-          catalog: Object.fromEntries(configProviders.flatMap(([id]) => {
-            const item = catalog[id]
-            return item ? [[id, item]] : []
-          })) as Record<ProviderV2.ID, Info>,
+          catalog: {},
           sdk,
           modelLoaders,
           varsLoaders,

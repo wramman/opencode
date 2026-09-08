@@ -45,7 +45,7 @@
 
 ## Fork interno
 
-Este fork **no usa el catálogo público**. Solo existen los proveedores declarados en JSON. No uses el `opencode` instalado en el sistema: ese es otro binario y otra config.
+Este fork **no usa APIs públicas**. Solo existen proveedores con id propio en JSON (p. ej. `ollama`). `openai` / `anthropic` en el JSON se rechazan. No uses el `opencode` instalado en el sistema.
 
 Más detalle: [docs/enterprise-providers.md](docs/enterprise-providers.md)
 
@@ -103,9 +103,9 @@ O en un `opencode.json` del proyecto. **No** uses `opencode auth` cloud.
 }
 ```
 
-Cada key de `provider` es un proveedor permitido. Cada entrada de `models` es un modelo que aparece en la TUI. Cambiar el host = editar `options.baseURL`.
+La key de `provider` tiene que ser un id **propio**. Cada entrada de `models` es un modelo de la TUI. Host = `options.baseURL`.
 
-No pongas `openai` ni `anthropic` en ese JSON si no querés esos modelos.
+`openai`, `anthropic`, `google` y el resto del catálogo público se rechazan aunque estén en el JSON.
 
 ---
 

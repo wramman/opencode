@@ -1,12 +1,19 @@
 # Proveedores internos (JSON-only)
 
-Este fork no carga el catálogo público (OpenAI, Anthropic, etc.). Un proveedor existe solo si está en `opencode.json`.
+Este fork no usa APIs públicas. Un proveedor entra solo si:
 
-No hay login cloud. `opencode auth` y la TUI listan únicamente las keys del JSON. `OPENAI_API_KEY` no inventa un provider.
+1. Está declarado en `opencode.json`, **y**
+2. Su id **no** es de una compañía del catálogo (openai, anthropic, google, openrouter, nvidia, …).
+
+`opencode.json` con `"openai": { ... }` **no** conecta a OpenAI. `OPENAI_API_KEY` tampoco. Usá un id propio (`ollama`, `empresa-llm`, …) y un `baseURL` interno.
 
 ## Cómo declararlo
 
-En `opencode.json` (proyecto o `~/.config/opencode/`):
+En la config aislada:
+
+`%USERPROFILE%\.local\share\opencode-enterprise\config\opencode.json`
+
+o en un `opencode.json` del proyecto.
 
 ```json
 {
@@ -27,9 +34,7 @@ En `opencode.json` (proyecto o `~/.config/opencode/`):
 }
 ```
 
-Cualquier id vale. Cambiar el host es editar `options.baseURL`.
-
-No declares `openai` / `anthropic` en el JSON si no querés esos modelos: una key vacía habilita el catálogo de ese id.
+Cambiar el host es editar `options.baseURL`. El id tiene que ser propio: `ollama` sí, `openai` no.
 
 ## Correr este fork
 
@@ -46,3 +51,4 @@ bun dev .
 - Other / proveedor custom desde la UI
 - Catálogo models.dev
 - Modelos cloud por variable de entorno
+- IDs públicos aunque estén en el JSON (`openai`, `anthropic`, `google`, …)
