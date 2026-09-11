@@ -34,3 +34,21 @@ export const go = {
 }
 
 export const marks = "_^~,"
+
+// Downsamples ASCII art to fit maxWidth x maxHeight without touching the
+// original lines. Terminal cells are ~twice as tall as wide, so rows are
+// sampled at half the column rate to preserve aspect.
+export function fitArt(lines: readonly string[], maxWidth: number, maxHeight: number): string[] {
+  const artWidth = Math.max(1, ...lines.map((line) => line.length))
+  const colStep = Math.max(1, Math.ceil(artWidth / Math.max(1, maxWidth)))
+  const rowStep = Math.max(1, Math.ceil(lines.length / Math.max(1, maxHeight)), Math.round(colStep / 2))
+  if (colStep === 1 && rowStep === 1) return [...lines]
+  const out: string[] = []
+  for (let row = 0; row < lines.length; row += rowStep) {
+    const source = lines[row] ?? ""
+    let line = ""
+    for (let col = 0; col < source.length; col += colStep) line += source[col]
+    out.push(line.trimEnd())
+  }
+  return out
+}
