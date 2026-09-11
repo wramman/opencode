@@ -43,65 +43,99 @@
 
 ---
 
-## Fork interno
+## Fork interno (DigitalWare)
 
 Este fork **no usa APIs públicas**. Solo existen proveedores con id propio en JSON (p. ej. `ollama`). `openai` / `anthropic` en el JSON se rechazan. No uses el `opencode` instalado en el sistema.
 
 Más detalle: [docs/enterprise-providers.md](docs/enterprise-providers.md)
 
-### Cómo correrlo
+### Qué se modificó respecto al upstream
+
+| Cambio | Dónde |
+| --- | --- |
+| Sin opción **Other**: el login TUI/CLI no permite dar de alta proveedores ad-hoc | `packages/tui/src/component/dialog-provider.tsx`, `packages/opencode/src/cli/cmd/providers.ts` |
+| Solo JSON: un proveedor existe solo si es key de `provider` en `opencode.json`; el catálogo `models.dev` no se carga ni se lista | `packages/opencode/src/provider/provider.ts`, HTTP `provider.list`, CLI `opencode auth` |
+| IDs públicos bloqueados aunque estén en el JSON (`openai`, `anthropic`, `google`, …) | `isProviderAllowed` en `packages/opencode/src/provider/provider.ts` |
+| Config aislada: por defecto usa `opencode-enterprise`, no `~\.config\opencode` | `packages/opencode/src/index.ts` |
+| Logo DigitalWare en la home, responsive al tamaño de la terminal | `packages/tui/src/logo.ts`, `packages/tui/src/component/logo.tsx` |
+
+### Dev paso a paso (Windows)
 
 Requisito: [Bun](https://bun.sh) 1.3+.
 
 ```bat
+:: 1. Clonar y entrar (una sola vez)
+git clone https://github.com/wramman/opencode.git
+cd opencode
+git checkout dev
+
+:: 2. Instalar dependencias (una sola vez, y cuando cambie bun.lock)
 bun install
-set OPENCODE_CONFIG_DIR=%USERPROFILE%\.local\share\opencode-enterprise\config
+
+:: 3. Aislar datos del OpenCode instalado (una sola vez por máquina;
+::    la config ya viene por defecto en opencode-enterprise)
 set XDG_DATA_HOME=%USERPROFILE%\.local\share\opencode-enterprise\xdg-data
+
+:: 4. Correr la TUI de ESTE repo (no el `opencode` global)
 bun dev .
 ```
 
-`OPENCODE_CONFIG_DIR` y `XDG_DATA_HOME` aíslan este fork de tu OpenCode global (`~\.config\opencode`).
-
 Para un proyecto concreto: `bun dev C:\ruta\al\proyecto`.
 
-### Compilar a exe (Windows)
+Verificación rápida: la home muestra el logo DigitalWare y el picker de modelos solo lista lo declarado en `.opencode/opencode.json`.
 
-Sí. Desde la raíz del repo:
+Tests del candado:
 
 ```bat
+bun test test/provider/provider.test.ts
+```
+
+(desde `packages/opencode`; nunca desde la raíz).
+
+### Build del ejecutable para distribución (Windows)
+
+```bat
+:: 1. Desde la raíz del repo, en el commit/tag a distribuir
+git checkout <tag>
+bun install
+
+:: 2. Compilar solo para esta máquina (x64)
+set OPENCODE_VERSION=dw-1.0.0
 bun run packages/opencode/script/build.ts --single
+
+:: 3. El binario queda en
+::    packages/opencode/dist/opencode-windows-x64/bin/opencode.exe
 ```
 
-El binario queda en:
+`OPENCODE_VERSION` queda incrustada en el binario (`opencode --version`). Sin esa variable, en la rama `dev` sale algo como `0.0.0-dev-<fecha>`: no distribuyas eso.
 
-`packages/opencode/dist/opencode-windows-x64/bin/opencode.exe`
+Para repartirlo: copiá el `.exe` más el `opencode.json` de la empresa. Al ejecutarlo en otra PC sigue valiendo `XDG_DATA_HOME` si quieren aislar el `auth.json`.
 
-(en ARM64: `opencode-windows-arm64`). Seguí usando las mismas variables de entorno al ejecutarlo, o va a leer la config global.
+### Propuesta de versionado y estrategia de releases
 
-### Dónde agregar los modelos privados
+> Propuesta, no regla todavía: si la ajustamos, se edita esta sección.
 
-En `.opencode/opencode.json` de este repo. **No** uses `opencode auth` cloud.
+**Esquema: `dw-MAYOR.MENOR.PARCHE`** (semver con prefijo `dw-`).
 
-```json
-{
-  "provider": {
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama interno",
-      "options": {
-        "baseURL": "https://ollama.empresa.local/v1"
-      },
-      "models": {
-        "llama": { "name": "Llama" }
-      }
-    }
-  }
-}
-```
+- `PARCHE`: fix de seguridad o bug del candado/logo.
+- `MENOR`: nueva capacidad interna (ej. otro proveedor propio, otro slot de logo).
+- `MAYOR`: rebase contra upstream o cambio que rompe el `opencode.json` existente.
+- El prefijo evita confundirla con la versión del OpenCode oficial.
 
-La key de `provider` tiene que ser un id **propio**. Cada entrada de `models` es un modelo de la TUI. Host = `options.baseURL`.
+**Estrategia: releases por lote, no por commit.**
 
-`openai`, `anthropic`, `google` y el resto del catálogo público se rechazan aunque estén en el JSON.
+1. El día a día vive en `dev`. Cada commit usa conventional commits (`fix(tui): …`, `feat(opencode): …`).
+2. No se pushea binario al repo: solo código + esta doc.
+3. Para liberar: se elige un commit verde de `dev`, se crea el tag `dw-X.Y.Z`, se compila con `OPENCODE_VERSION=dw-X.Y.Z` y se publica el `.exe` como asset del tag en GitHub.
+4. Frecuencia sugerida: mensual, o inmediata si hay fix de seguridad del candado.
+5. `upstream` (anomalyco/opencode) se sincroniza a mano y solo cuando hace falta: `git fetch upstream`, probar el candado (`bun test test/provider/provider.test.ts`), y recién ahí tagear.
+
+Checklist antes de cada release:
+
+- [ ] `bun test test/provider/provider.test.ts` en verde
+- [ ] `bun typecheck` en `packages/opencode` y `packages/tui`
+- [ ] La TUI muestra el logo y solo modelos del JSON
+- [ ] Tag `dw-X.Y.Z` creado sobre ese commit
 
 ---
 
