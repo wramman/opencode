@@ -80,11 +80,7 @@ El binario queda en:
 
 ### Dónde agregar los modelos privados
 
-En el JSON de config aislada:
-
-`%USERPROFILE%\.local\share\opencode-enterprise\config\opencode.json`
-
-O en un `opencode.json` del proyecto. **No** uses `opencode auth` cloud.
+En `.opencode/opencode.json` de este repo. **No** uses `opencode auth` cloud.
 
 ```json
 {

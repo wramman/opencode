@@ -21,7 +21,8 @@ import { ImportCommand } from "./cli/cmd/import"
 import { AttachCommand } from "./cli/cmd/attach"
 import { TuiThreadCommand } from "./cli/cmd/tui"
 import { AcpCommand } from "./cli/cmd/acp"
-import { EOL } from "os"
+import { EOL, homedir } from "os"
+import path from "path"
 import { WebCommand } from "./cli/cmd/web"
 import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
@@ -64,6 +65,9 @@ const cli = yargs(args)
     type: "boolean",
   })
   .middleware(async (opts) => {
+    if (!process.env.OPENCODE_CONFIG_DIR) {
+      process.env.OPENCODE_CONFIG_DIR = path.join(homedir(), ".local", "share", "opencode-enterprise", "config")
+    }
     if (opts.printLogs) process.env.OPENCODE_PRINT_LOGS = "1"
     if (opts.logLevel) process.env.OPENCODE_LOG_LEVEL = opts.logLevel
     if (opts.pure) {

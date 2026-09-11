@@ -1,5 +1,7 @@
 # Proveedores internos (JSON-only)
 
+Este binario **no lee** `~\.config\opencode` (esa es tu sesión instalada). Config del fork: `.opencode/opencode.json` y `%USERPROFILE%\.local\share\opencode-enterprise\config`.
+
 Este fork no usa APIs públicas. Un proveedor entra solo si:
 
 1. Está declarado en `opencode.json`, **y**
@@ -9,11 +11,7 @@ Este fork no usa APIs públicas. Un proveedor entra solo si:
 
 ## Cómo declararlo
 
-En la config aislada:
-
-`%USERPROFILE%\.local\share\opencode-enterprise\config\opencode.json`
-
-o en un `opencode.json` del proyecto.
+En `.opencode/opencode.json` de este fork.
 
 ```json
 {
